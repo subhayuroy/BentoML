@@ -595,7 +595,7 @@ or malformatted. Users can do this via the InferenceTask#discard API, here's an 
 
 .. code-block:: python
 
-    from typings import List
+    from typing import List
     from bentoml import env, artifacts, api, BentoService
     from bentoml.adapters import JsonInput
     from bentoml.types import JsonSerializable, InferenceTask  # type annotations are optional
@@ -891,7 +891,7 @@ Adaptive Micro-Batching
 
 .. note::
   The micro-batching option has become the default behavior starting release 0.12.0.
-  Use the --disable-microbatch option to turn off batching behavior.
+  Set --mb-max-batch-size=1 to turn off batching behavior.
 
 Micro batching is a technique where incoming prediction requests are grouped into small
 batches to achieve the performance advantage of batch processing in model inference

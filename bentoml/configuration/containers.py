@@ -18,7 +18,7 @@ import os
 
 from deepmerge import always_merger
 from dependency_injector import containers, providers
-from schema import And, Or, Schema, SchemaError, Optional, Use
+from schema import And, Optional, Or, Schema, SchemaError, Use
 
 from bentoml import __version__
 from bentoml.configuration import expand_env_var, get_bentoml_deploy_version
@@ -49,7 +49,7 @@ SCHEMA = Schema(
             "timeout": And(int, lambda timeout: timeout > 0),
             "max_request_size": And(int, lambda size: size > 0),
             "microbatch": {
-                "enabled": bool,
+                Optional("enabled", default=True): bool,
                 "workers": Or(And(int, lambda workers: workers > 0), None),
                 "max_batch_size": Or(And(int, lambda size: size > 0), None),
                 "max_latency": Or(And(int, lambda latency: latency > 0), None),
@@ -59,6 +59,15 @@ SCHEMA = Schema(
             "metrics": {"enabled": bool, "namespace": str},
             "feedback": {"enabled": bool},
             "logging": {"level": str},
+            "cors": {
+                "enabled": bool,
+                "access_control_allow_origin": Or(str, None),
+                "access_control_allow_credentials": Or(bool, None),
+                "access_control_allow_headers": Or([str], str, None),
+                "access_control_allow_methods": Or([str], str, None),
+                "access_control_max_age": Or(int, None),
+                "access_control_expose_headers": Or([str], str, None),
+            },
         },
         "logging": {
             "level": And(
@@ -124,7 +133,7 @@ class BentoMLConfiguration:
         # Default configuraiton
         if default_config_file is None:
             default_config_file = os.path.join(
-                os.path.dirname(__file__), "default_bentoml.yml"
+                os.path.dirname(__file__), "default_configuration.yml"
             )
 
         with open(default_config_file, "rb") as f:
@@ -135,7 +144,7 @@ class BentoMLConfiguration:
                 SCHEMA.validate(self.config)
             except SchemaError as e:
                 raise BentoMLConfigException(
-                    "Default configuration 'default_bentoml.yml' does not"
+                    "Default configuration 'default_configuration.yml' does not"
                     " conform to the required schema."
                 ) from e
 
@@ -189,9 +198,26 @@ class BentoMLConfiguration:
         return self.config
 
 
+def _get_cors_options(**kwargs):
+    import aiohttp_cors
+
+    filtered_kwargs = {k: v for k, v in kwargs.items() if v is not None}
+
+    return aiohttp_cors.ResourceOptions(**filtered_kwargs)
+
+
 class BentoMLContainer(containers.DeclarativeContainer):
 
     config = providers.Configuration(strict=True)
+
+    access_control_options = providers.Callable(
+        _get_cors_options,
+        allow_credentials=config.bento_server.cors.access_control_allow_credentials,
+        expose_headers=config.bento_server.cors.access_control_expose_headers,
+        allow_methods=config.bento_server.cors.access_control_allow_methods,
+        allow_headers=config.bento_server.cors.access_control_allow_headers,
+        max_age=config.bento_server.cors.access_control_max_age,
+    )
 
     api_server_workers = providers.Callable(
         lambda workers: workers or (multiprocessing.cpu_count() // 2) + 1,

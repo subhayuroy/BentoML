@@ -14,8 +14,9 @@
 
 import logging
 import multiprocessing
-from dependency_injector.wiring import inject, Provide
 from typing import Optional
+
+from dependency_injector.wiring import Provide, inject
 
 from bentoml.configuration.containers import BentoMLContainer
 from bentoml.marshal.marshal import MarshalService
@@ -35,9 +36,6 @@ def gunicorn_marshal_server(
         BentoMLContainer.config.bento_server.max_request_size
     ],
     default_port: int = Provide[BentoMLContainer.config.bento_server.port],
-    default_enable_microbatch: bool = Provide[
-        BentoMLContainer.config.bento_server.microbatch.enabled
-    ],
     default_mb_max_batch_size: int = Provide[
         BentoMLContainer.config.bento_server.microbatch.max_batch_size
     ],
@@ -60,7 +58,6 @@ def gunicorn_marshal_server(
             outbound_workers: int = default_outbound_workers,
             max_request_size: int = default_max_request_size,
             port: int = default_port,
-            enable_microbatch: bool = default_enable_microbatch,
             mb_max_batch_size: int = default_mb_max_batch_size,
             mb_max_latency: int = default_mb_max_latency,
             prometheus_lock: Optional[multiprocessing.Lock] = None,
@@ -83,11 +80,10 @@ def gunicorn_marshal_server(
             self.outbound_port = outbound_port
             self.outbound_host = outbound_host
             self.outbound_workers = outbound_workers
-            self.enable_microbatch = enable_microbatch
             self.mb_max_batch_size = mb_max_batch_size
             self.mb_max_latency = mb_max_latency
 
-            super(GunicornMarshalServer, self).__init__()
+            super().__init__()
 
         def load_config(self):
             self.load_config_from_file("python:bentoml.server.gunicorn_config")
@@ -109,7 +105,6 @@ def gunicorn_marshal_server(
                 self.outbound_host,
                 self.outbound_port,
                 outbound_workers=self.outbound_workers,
-                enable_microbatch=self.enable_microbatch,
                 mb_max_batch_size=self.mb_max_batch_size,
                 mb_max_latency=self.mb_max_latency,
             )
@@ -118,6 +113,6 @@ def gunicorn_marshal_server(
         def run(self):
             setup_prometheus_multiproc_dir(self.prometheus_lock)
             marshal_logger.info("Running micro batch service on :%d", self.port)
-            super(GunicornMarshalServer, self).run()
+            super().run()
 
     return GunicornMarshalServer

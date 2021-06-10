@@ -35,16 +35,17 @@ Remaining properties will take their defaults values.
 Throughout the BentoML documentation, features that are customizable through configuration are demonstrated 
 like the example above. For a full configuration schema including all customizable properties, refer to 
 the BentoML configuration template defined in 
-`default_bentoml.yml <https://github.com/bentoml/BentoML/blob/master/bentoml/configuration/default_bentoml.yml>`_. 
+`default_configuration.yml <https://github.com/bentoml/BentoML/blob/master/bentoml/configuration/default_configuration.yml>`_. 
 
 Docker Deployment
 -----------------
 
-Configuration file can be mounted to Docker container using the `-v` option.
+Configuration file can be mounted to the Docker container using the `-v` option and specified to the BentoML 
+runtime using the `-e` environment variable option.
 
 .. code-block:: shell
 
-    $ docker run -v /local/path/bentoml.yml:/user/home/bentoml/bentoml.yml
+    $ docker run -v /local/path/configuration.yml:/home/bentoml/configuration.yml -e BENTOML_CONFIG=/home/bentoml/configuration.yml
 
 Configuration Priority
 ----------------------
